@@ -36,18 +36,18 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
             <a href="#" className="text-2xl font-bold text-slate-100 hover:text-orange-500 transition-colors">
               Petr Hanovec
             </a>
-            <nav className="hidden lg:flex items-center space-x-6">
+            <nav className="hidden lg:flex items-center space-x-4">
               {navLinks.map((link) => (
                 <button
                   key={link.key}
                   onClick={() => handleNavClick(link.key)}
-                  className="text-slate-300 font-medium hover:text-orange-500 transition-colors"
+                  className="text-sm font-medium text-slate-300 hover:text-orange-500 transition-colors whitespace-nowrap"
                 >
                   {link.label}
                 </button>
               ))}
             </nav>
-            <div className="hidden lg:flex items-center">
+            <div className="hidden lg:flex items-center ml-4">
               <div className="text-sm font-semibold">
                 <span className={`cursor-pointer transition-colors ${language === 'cs' ? 'text-slate-100' : 'text-slate-500 hover:text-white'}`} onClick={() => setLanguage('cs')}>CZ</span>
                 <span className="text-slate-500 mx-1">/</span>
