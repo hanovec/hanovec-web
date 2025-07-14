@@ -1,15 +1,15 @@
 {
   "version": 2,
   "builds": [
-    { "src": "index.html", "use": "@vercel/static" },
-    { "src": "petr-hanovec.jpg", "use": "@vercel/static" },
-    { "src": "metadata.json", "use": "@vercel/static" },
-    { "src": "*.tsx", "use": "@vercel/static" },
-    { "src": "*.ts", "use": "@vercel/static" },
-    { "src": "components/**/*.tsx", "use": "@vercel/static" },
-    { "src": "contexts/**/*.tsx", "use": "@vercel/static" }
+    {
+      "src": "/**",
+      "use": "@vercel/static"
+    }
   ],
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ]
 }
