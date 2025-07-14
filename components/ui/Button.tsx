@@ -1,43 +1,27 @@
 
 import React from 'react';
 
-// Společné vlastnosti pro obě varianty
-interface CommonProps {
+// A simplified and robust props definition for a polymorphic button.
+// It accepts props for both button and anchor elements.
+type ButtonProps = {
   children: React.ReactNode;
   variant?: 'primary' | 'secondary';
   size?: 'md' | 'lg';
   className?: string;
+  href?: string;
   disabled?: boolean;
-}
+} & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'className' | 'disabled'> &
+  Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, 'className' | 'disabled'>;
 
-// Definuje typy pro props pomocí tzv. "discriminated union".
-// TypeScript tak přesně ví, jaké atributy povolit na základě toho, zda existuje `href`.
-type ButtonProps = CommonProps & (
-  (
-    // Varianta pro <button>
-    Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'disabled'> & {
-      href?: undefined;
-    }
-  ) |
-  (
-    // Varianta pro <a>
-    Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, 'disabled'> & {
-      href: string;
-    }
-  )
-);
-
-
-const Button: React.FC<ButtonProps> = (props) => {
-  const { 
-    children, 
-    variant = 'primary', 
-    size = 'md', 
-    className: customClassName,
-    disabled = false,
-    ...rest 
-  } = props;
-
+const Button: React.FC<ButtonProps> = ({
+  children,
+  variant = 'primary',
+  size = 'md',
+  className: customClassName,
+  href,
+  disabled,
+  ...rest
+}) => {
   const baseStyles = 'inline-flex items-center justify-center font-semibold rounded-lg shadow-md transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900';
   
   const sizeStyles = {
@@ -50,40 +34,33 @@ const Button: React.FC<ButtonProps> = (props) => {
     secondary: 'bg-slate-700 text-slate-200 hover:bg-slate-600 focus:ring-slate-500',
   };
 
-  const disabledStyles = 'disabled:cursor-not-allowed disabled:opacity-60';
-  
-  const finalClassName = `${baseStyles} ${sizeStyles[size]} ${variantStyles[variant]} ${disabledStyles} ${customClassName || ''}`;
+  const finalClassName = `${baseStyles} ${sizeStyles[size]} ${variantStyles[variant]} ${customClassName || ''}`;
 
-  // Pokud existuje `href`, vykreslíme odkaz <a>
-  if (props.href !== undefined) {
-    const { href, ...anchorProps } = rest as Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, 'disabled'>;
-
+  // If href is provided, it's a link.
+  if (href) {
+    // For disabled links, render a non-interactive span to prevent navigation.
     if (disabled) {
-       // Pro "disabled" odkaz odstraníme `href` a zamezíme prokliku
       return (
-        <a 
-          {...anchorProps}
-          className={finalClassName}
-          aria-disabled="true"
-          onClick={(e) => e.preventDefault()}
-        >
+        <span className={`${finalClassName} opacity-60 cursor-not-allowed`} aria-disabled="true">
           {children}
-        </a>
+        </span>
       );
     }
-    
+    // Render a normal, enabled link.
     return (
-      <a {...anchorProps} href={href} className={finalClassName}>
+      <a href={href} className={finalClassName} {...rest}>
         {children}
       </a>
     );
   }
 
-  // Jinak vykreslíme tlačítko <button>
-  const buttonProps = rest as Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'disabled'>;
-
+  // Otherwise, render a button.
   return (
-    <button {...buttonProps} disabled={disabled} className={finalClassName}>
+    <button
+      className={`${finalClassName} disabled:opacity-60 disabled:cursor-not-allowed`}
+      disabled={disabled}
+      {...rest}
+    >
       {children}
     </button>
   );
