@@ -8,24 +8,23 @@ type BaseProps = {
   className?: string;
 };
 
-// Props for a real <button> element
+// Props for a real <button> element, omitting keys that are in BaseProps
 type ButtonAsButton = BaseProps &
-  Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, keyof BaseProps | 'onClick'> & {
+  Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, keyof BaseProps> & {
     href?: undefined;
-    onClick?: React.MouseEventHandler<HTMLButtonElement>;
   };
 
-// Props for an <a> element that looks like a button
+// Props for an <a> element that looks like a button, omitting keys that are in BaseProps
 type ButtonAsLink = BaseProps &
-  Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, keyof BaseProps | 'onClick'> & {
+  Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, keyof BaseProps> & {
     href: string;
-    onClick?: React.MouseEventHandler<HTMLAnchorElement>;
   };
 
 // Union of the two types, making it a polymorphic component
 type ButtonProps = ButtonAsButton | ButtonAsLink;
 
 const Button: React.FC<ButtonProps> = (props) => {
+  // Destructure common props once to avoid redeclaration.
   const { variant = 'primary', size = 'md', className: customClassName, children } = props;
 
   const baseStyles = 'inline-flex items-center justify-center font-semibold rounded-lg shadow-md transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:cursor-not-allowed';
@@ -44,11 +43,15 @@ const Button: React.FC<ButtonProps> = (props) => {
 
   if (props.href) {
     // If href exists, props is narrowed to ButtonAsLink.
-    // We destructure out our component-specific props and onClick to handle it specially.
-    // 'rest' will contain only valid anchor attributes.
-    const { children, variant, size, className, onClick, ...rest } = props;
+    // Destructure to get the rest of the props, ignoring ones we've already handled.
+    const { 
+      children: _children, 
+      variant: _variant, 
+      size: _size, 
+      className: _className, 
+      ...rest 
+    } = props;
     
-    // Treat any 'disabled' or 'aria-disabled' as a signal to disable the link.
     const disabled = (rest as any).disabled || props['aria-disabled'];
     
     return (
@@ -62,8 +65,7 @@ const Button: React.FC<ButtonProps> = (props) => {
             e.preventDefault();
             return;
           }
-          // onClick is now correctly typed for an anchor element.
-          if (onClick) onClick(e);
+          if (props.onClick) props.onClick(e);
         }}
       >
         {children}
@@ -72,8 +74,14 @@ const Button: React.FC<ButtonProps> = (props) => {
   }
 
   // If href doesn't exist, props is narrowed to ButtonAsButton.
-  // 'rest' will contain only valid button attributes.
-  const { children, variant, size, className, ...rest } = props;
+  // Destructure to get the rest of the props, ignoring ones we've already handled.
+  const { 
+    children: _children, 
+    variant: _variant, 
+    size: _size, 
+    className: _className, 
+    ...rest 
+  } = props;
 
   return (
     <button {...rest} className={finalClassName}>
