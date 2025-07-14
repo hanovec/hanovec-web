@@ -3,6 +3,8 @@ import Button from './ui/Button';
 import { useLanguage } from '../contexts/LanguageContext';
 import { content } from '../content';
 
+type Status = 'idle' | 'submitting' | 'success' | 'error';
+
 const Contact: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
@@ -12,7 +14,7 @@ const Contact: React.FC = () => {
     message: '',
     gdpr: false,
   });
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [status, setStatus] = useState<Status>('idle');
   const { language } = useLanguage();
   const langContent = content[language].contact;
 
@@ -25,10 +27,33 @@ const Contact: React.FC = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log('Odeslaná data formuláře:', formData);
-    setIsSubmitted(true);
+    setStatus('submitting');
+    
+    // Pro finální nasazení si vytvořte vlastní endpoint na formspree.io a nahraďte URL níže
+    const formspreeEndpoint = 'https://formspree.io/f/xeqyqgpr'; // Toto je veřejný testovací endpoint
+
+    try {
+      const response = await fetch(formspreeEndpoint, {
+        method: 'POST',
+        body: JSON.stringify(formData),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        setStatus('success');
+        setFormData({ name: '', company: '', email: '', phone: '', message: '', gdpr: false });
+      } else {
+        setStatus('error');
+      }
+    } catch (error) {
+      console.error('Form submission error:', error);
+      setStatus('error');
+    }
   };
 
   return (
@@ -41,7 +66,7 @@ const Contact: React.FC = () => {
           </p>
         </div>
         <div className="mt-16 max-w-4xl mx-auto bg-slate-800 text-slate-200 rounded-lg shadow-2xl p-8 md:p-12">
-          {isSubmitted ? (
+          {status === 'success' ? (
             <div className="text-center py-12">
               <h3 className="text-2xl font-bold text-green-500">{langContent.success.title}</h3>
               <p className="mt-2 text-slate-400">{langContent.success.subtitle}</p>
@@ -81,8 +106,15 @@ const Contact: React.FC = () => {
                 </div>
               </div>
               <div className="mt-6 text-right">
-                <Button type="submit" size="lg">{langContent.form.submit}</Button>
+                <Button type="submit" size="lg" disabled={status === 'submitting'}>
+                  {status === 'submitting' ? 'Odesílání...' : langContent.form.submit}
+                </Button>
               </div>
+              {status === 'error' && (
+                <p className="text-red-500 text-sm mt-4 text-center">
+                  Omlouváme se, došlo k chybě. Zkuste to prosím znovu později.
+                </p>
+              )}
             </form>
           )}
         </div>
