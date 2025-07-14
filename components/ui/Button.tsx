@@ -1,31 +1,35 @@
 import React from 'react';
 
-// Define props for a base button/anchor
-type BaseProps = {
+// Base props shared by both button and anchor variants
+type ButtonBaseProps = {
   children: React.ReactNode;
   variant?: 'primary' | 'secondary';
   size?: 'md' | 'lg';
   className?: string;
 };
 
-// Props for a real <button> element, omitting keys that are in BaseProps
-type ButtonAsButton = BaseProps &
-  Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, keyof BaseProps> & {
-    href?: undefined;
-  };
+// Props specific to the component when it's a <button>
+type ButtonAsButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  href?: never;
+};
 
-// Props for an <a> element that looks like a button, omitting keys that are in BaseProps
-type ButtonAsLink = BaseProps &
-  Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, keyof BaseProps> & {
-    href: string;
-  };
+// Props specific to the component when it's an <a>
+type ButtonAsAnchorProps = React.AnchorHTMLAttributes<HTMLAnchorElement> & {
+  href: string;
+};
 
-// Union of the two types, making it a polymorphic component
-type ButtonProps = ButtonAsButton | ButtonAsLink;
+// The final props type is a combination of base props and a discriminated union
+// of element-specific props, keyed by the presence of `href`.
+type ButtonProps = ButtonBaseProps & (ButtonAsButtonProps | ButtonAsAnchorProps);
 
-const Button: React.FC<ButtonProps> = (props) => {
-  // Destructure common props once to avoid redeclaration.
-  const { variant = 'primary', size = 'md', className: customClassName, children } = props;
+
+const Button: React.FC<ButtonProps> = ({
+  children,
+  variant = 'primary',
+  size = 'md',
+  className: customClassName,
+  ...rest
+}) => {
 
   const baseStyles = 'inline-flex items-center justify-center font-semibold rounded-lg shadow-md transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:cursor-not-allowed';
   
@@ -41,23 +45,16 @@ const Button: React.FC<ButtonProps> = (props) => {
   
   const finalClassName = `${baseStyles} ${sizeStyles[size]} ${variantStyles[variant]} ${customClassName || ''}`;
 
-  if (props.href) {
-    // If href exists, props is narrowed to ButtonAsLink.
-    // Destructure to get the rest of the props, ignoring ones we've already handled.
-    const { 
-      children: _children, 
-      variant: _variant, 
-      size: _size, 
-      className: _className, 
-      ...rest 
-    } = props;
-    
-    const disabled = (rest as any).disabled || props['aria-disabled'];
+  // If `href` exists, we render an anchor tag. The type guard `'href' in rest`
+  // narrows the type of `rest` to `ButtonAsAnchorProps`.
+  if ('href' in rest && rest.href !== undefined) {
+    const { href, ...anchorProps } = rest;
+    const disabled = anchorProps.disabled || anchorProps['aria-disabled'];
     
     return (
       <a
-        {...rest}
-        href={disabled ? undefined : props.href}
+        {...anchorProps}
+        href={disabled ? undefined : href}
         className={`${finalClassName} ${disabled ? 'opacity-60 pointer-events-none' : ''}`}
         aria-disabled={disabled}
         onClick={(e) => {
@@ -65,26 +62,19 @@ const Button: React.FC<ButtonProps> = (props) => {
             e.preventDefault();
             return;
           }
-          if (props.onClick) props.onClick(e);
+          if (anchorProps.onClick) anchorProps.onClick(e);
         }}
       >
         {children}
       </a>
     );
   }
-
-  // If href doesn't exist, props is narrowed to ButtonAsButton.
-  // Destructure to get the rest of the props, ignoring ones we've already handled.
-  const { 
-    children: _children, 
-    variant: _variant, 
-    size: _size, 
-    className: _className, 
-    ...rest 
-  } = props;
+  
+  // Otherwise, we render a button. `rest` is narrowed to `ButtonAsButtonProps`.
+  const buttonProps = rest;
 
   return (
-    <button {...rest} className={finalClassName}>
+    <button {...buttonProps} className={finalClassName}>
       {children}
     </button>
   );
